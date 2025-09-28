@@ -334,9 +334,12 @@ function renderPlayingPhase() {
     const cardWidth = 180;
     const cardHeight = 100;
     const spacing = 10;
-    const totalWidth =
-      gameState.myHand.length * (cardWidth + spacing) - spacing;
+    const columns = 3;
+    const rows = Math.ceil(gameState.myHand.length / columns);
+    const totalWidth = columns * (cardWidth + spacing) - spacing;
+    const totalHeight = rows * (cardHeight + spacing) - spacing;
     let startX = (canvas.width - totalWidth) / 2;
+    let startY = handY - totalHeight + cardHeight;
 
     ctx.fillStyle = "#fff";
     ctx.font = "18px monospace";
@@ -344,18 +347,20 @@ function renderPlayingPhase() {
     ctx.fillText(
       "Your Hand - Click a card to play it!",
       canvas.width / 2,
-      handY - 30,
+      startY - 30,
     );
 
     for (let i = 0; i < gameState.myHand.length; i++) {
+      const row = Math.floor(i / columns);
+      const col = i % columns;
       const cardId = gameState.myHand[i];
       const card = cardMap.get(cardId);
       if (card) {
         const isSelected = gameState.selectedCards.includes(cardId);
         renderCard(
           card,
-          startX + i * (cardWidth + spacing),
-          handY,
+          startX + col * (cardWidth + spacing),
+          startY + row * (cardHeight + spacing),
           cardWidth,
           cardHeight,
           false,
@@ -531,17 +536,23 @@ function getCardAtPosition(x, y) {
       const cardWidth = 180;
       const cardHeight = 100;
       const spacing = 10;
-      const totalWidth =
-        gameState.myHand.length * (cardWidth + spacing) - spacing;
+      const columns = 3;
+      const rows = Math.ceil(gameState.myHand.length / columns);
+      const totalWidth = columns * (cardWidth + spacing) - spacing;
+      const totalHeight = rows * (cardHeight + spacing) - spacing;
       const startX = (canvas.width - totalWidth) / 2;
+      const startY = handY - totalHeight + cardHeight;
 
       for (let i = 0; i < gameState.myHand.length; i++) {
-        const cardX = startX + i * (cardWidth + spacing);
+        const row = Math.floor(i / columns);
+        const col = i % columns;
+        const cardX = startX + col * (cardWidth + spacing);
+        const cardY = startY + row * (cardHeight + spacing);
         if (
           x >= cardX &&
           x <= cardX + cardWidth &&
-          y >= handY &&
-          y <= handY + cardHeight
+          y >= cardY &&
+          y <= cardY + cardHeight
         ) {
           return { type: "hand", index: i, cardId: gameState.myHand[i] };
         }
