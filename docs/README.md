@@ -59,24 +59,3 @@ This architecture is designed to produce a fast, minimal payload, and scalable C
 | Data Storage  | In-memory + Capn Proto files | Fast access and serving of static card data      |
 
 ---
-
-## What is Needed From Each End
-
-### From Engineering
-- **Backend:** Build server to generate and serve precomputed card sequences; implement real-time game state sync with Capn Proto over WebSocket, including role-based data privacy.
-- **Frontend:** Implement Capn Proto decompression/parsing, card lookup, UI rendering with czar-specific judging interface, and WebSocket game communication.
-- **Build System:** Setup efficient bundling with minification and Brotli compression.
-- **Testing:** Profile network usage, parse speed, and UI responsiveness.
-- **Security:** Secure WebSocket, session management, and input validation.
-
-### From Design
-- Provide minimalistic UI design focusing on efficient rendering of black/white cards and responsive interactions.
-
-### From DevOps
-- CDN setup for static content delivery and fast Brotli compressed file serving.
-- WebSocket server scaling and monitoring setup.
-
----
-
-This architecture balances minimal load size, streaming efficiency, and fast user experience using cutting-edge serialization and compression with advanced networking. It is designed for scalability, extensibility (expansion card packs), and smooth real-time multiplayer gaming.
-
