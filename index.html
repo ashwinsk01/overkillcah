@@ -1,37 +1,31 @@
-<file_path> CAH-Hyper/index.html </file_path>
-
-<edit_description>
-    Create the main HTML file with canvas for efficient card rendering
-</edit_description>
-
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Hyper-Efficient CAH</title>
-        <style>
-            body {
-                margin: 0;
-                background: #000;
-                color: #fff;
-                font-family: monospace;
-            }
-            canvas {
-                display: block;
-            }
-            #loading {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-        </style>
-    </head>
-    <body>
-        <div id="loading">Loading cards...</div>
-        <canvas id="gameCanvas"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hyper-Efficient CAH</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+        color: #fff;
+        font-family: monospace;
+      }
+      canvas {
+        display: block;
+      }
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">Loading cards...</div>
+    <canvas id="gameCanvas"></canvas>
 
-        <script src="app.js"></script>
-    </body>
+    <script src="app.js"></script>
+  </body>
 </html>
