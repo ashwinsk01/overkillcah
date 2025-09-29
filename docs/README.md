@@ -46,13 +46,14 @@ Well here's the tech specs I guess.
 
 ```mermaid
 graph TD
-    A[User Browser<br/>Tech: Web Browser<br/>Performance: Loads <35KB total] -->|HTTP Initial Load| B[Node.js Backend Server<br/>Tech: Node.js<br/>Performance: Lightweight, no heavy frameworks]
-    A -->|WebSocket Connection| C[WebSocket Handler<br/>Tech: WebSockets<br/>Performance: Real-time, lag-free messaging<br/>Savings: Eliminates polling overhead]
-    B -->|Serves| D[Frontend Bundle<br/>Tech: Vanilla JS + Canvas<br/>Performance: <20KB payload<br/>Savings: Minimal bundle size for fast loads]
-    D -->|Renders| E[Canvas Renderer<br/>Tech: Canvas API<br/>Performance: Smooth rendering<br/>Savings: No DOM manipulation overhead]
-    C -->|Manages| F[Game Logic<br/>Tech: Node.js<br/>Performance: Auto-starts at 3+ players<br/>Efficiency: Seamless game initiation]
-    G[Binary Compressed Cards<br/>Tech: Binary compression (Brotli + Capn Proto vibes)<br/>Performance: Efficient data transfer<br/>Savings: Reduced bandwidth and processing]
-    E -->|Displays| H[Game UI<br/>Tech: Canvas-based<br/>Performance: Instant updates<br/>Savings: Optimized for real-time interactions]
+    A["User Browser\nTech: Web Browser\nPerformance: Loads <35KB total"] -->|HTTP Initial Load| B["Node.js Backend Server\nTech: Node.js\nPerformance: Lightweight, no heavy frameworks"]
+    A -->|WebSocket Connection| C["WebSocket Handler\nTech: WebSockets\nPerformance: Real-time, lag-free messaging\nSavings: Eliminates polling overhead"]
+    B -->|Serves| D["Frontend Bundle\nTech: Vanilla JS + Canvas\nPerformance: <20KB payload\nSavings: Minimal bundle size for fast loads"]
+    D -->|Renders| E["Canvas Renderer\nTech: Canvas API\nPerformance: Smooth rendering\nSavings: No DOM manipulation overhead"]
+    C -->|Manages| F["Game Logic\nTech: Node.js\nPerformance: Auto-starts at 3+ players\nEfficiency: Seamless game initiation"]
+    G["Binary Compressed Cards\nTech: Binary compression (Brotli + Capn Proto vibes)\nPerformance: Efficient data transfer\nSavings: Reduced bandwidth and processing"]
+    E -->|Displays| H["Game UI\nTech: Canvas-based\nPerformance: Instant updates\nSavings: Optimized for real-time interactions"]
+
 ```
 
 Built for speed, laughs, and that sweet, sweet efficiency high. Contribute if you're as obsessed with optimization as I apparently am :)
