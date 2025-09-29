@@ -132,13 +132,3 @@ Game End:
 ├── First to 10 points wins
 └── Return to WAITING for new game
 ```
-
-## Performance Characteristics
-
-- **Binary messages**: 30-50% smaller than JSON
-- **Brotli compression**: 75% reduction in card data size
-- **Total payload**: <50KB for complete game data
-- **Load time**: <100ms on typical connections
-- **Real-time gameplay**: <50ms latency for card plays
-- **Privacy**: Only Card Czar sees played cards during judging
-- **Scalability**: 1000+ concurrent players per instance

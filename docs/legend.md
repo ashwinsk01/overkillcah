@@ -1,7 +1,5 @@
 # Variable Name Legend for Minified app.js
 
-This document explains the shortened variable and function names used in the minified `app.js` file to maintain readability and maintainability.
-
 ## Global Variables
 
 - `c`: Canvas element (`document.getElementById("gameCanvas")`)
@@ -51,10 +49,3 @@ This document explains the shortened variable and function names used in the min
 - `cws`: Connect WebSocket
 - `ar`: Attempt reconnect
 - `hwsm`: Handle WebSocket message
-
-## Notes
-
-- All console.log statements were preserved for debugging
-- Event listeners and core logic remain unchanged
-- This minification reduces file size by approximately 40% while maintaining functionality
-- Original variable names were chosen for brevity while avoiding conflicts
