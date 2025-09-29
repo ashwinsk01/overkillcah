@@ -1,8 +1,8 @@
 # Overkill Cards Against Humanity 🎴⚡
 
-Welcome to the fastest, leanest Cards Against Humanity game on the web! This isn't your grandma's card game – it's a hyper-optimized multiplayer machine that loads in under 35KB and delivers lols at lightning speed.
+Welcome to the fastest, leanest Cards Against Humanity game on the web! This is a hyper-optimized online multiplayer version that loads in under 35KB and delivers lols at lightning speed. 
 
-Built for the most inappropriate party game, now with zero excuses for lag.
+Built for the most inappropriate party game, now with zero excuses for lag. Aiming to ridiculously overengineer this.
 
 ## 🚀 Quick Start
 
@@ -13,17 +13,16 @@ Built for the most inappropriate party game, now with zero excuses for lag.
    npm install
    ```
 
-2. **Build & Run:**
+2. **Just Start:**
    ```bash
-   npm run build
-   npm start
+   node server.js
    ```
 
-3. **Play:** Open `http://localhost:8080` in your browser. Grab friends, join a room, and let the chaos begin!
+4. **Play:** Open `http://localhost:8080` in your browser. Grab friends, join a room, and let the chaos begin!
 
 ## 🔥 Features
 
-- **Blazing Fast:** Under 20KB payload. Loads faster than you can say "that's inappropriate."
+- **Blazing Fast:** Under 35KB payload. Loads faster than you can say "that's inappropriate."
 - **Real-Time Multiplayer:** WebSockets for instant, lag-free card-slinging.
 - **Canvas Magic:** Smooth rendering without the DOM drama.
 - **Binary Wizardry:** Compressed cards, efficient messaging – because who needs bloat?
@@ -38,7 +37,6 @@ This is Cards Against Humanity. Expect offensive, hilarious, and utterly wrong c
 - **Frontend:** Vanilla JS + Canvas (because frameworks are for quitters)
 - **Backend:** Node.js + WebSockets
 - **Data:** Binary-compressed cards (Brotli + Cap'n Proto vibes)
-- **Goal:** Prove that fun doesn't need to be heavy.
 
 ## 📊 Technical Architecture
 
@@ -57,7 +55,5 @@ graph TD
 ```
 
 Built for speed, laughs, and that sweet, sweet efficiency high. Contribute if you're as obsessed with optimization as I apparently am :)
-
-*(P.S. First to 10 points wins. Or cries. Your call.)*
 
 **Cards Against Humanity** is a trademark of Cards Against Humanity LLC. This project is not affiliated with or endorsed by Cards Against Humanity LLC. Built for fun while absolutely pasted.
