@@ -51,7 +51,7 @@ graph TD
     B -->|Serves| D[Frontend Bundle<br/>Tech: Vanilla JS + Canvas<br/>Performance: <20KB payload<br/>Savings: Minimal bundle size for fast loads]
     D -->|Renders| E[Canvas Renderer<br/>Tech: Canvas API<br/>Performance: Smooth rendering<br/>Savings: No DOM manipulation overhead]
     C -->|Manages| F[Game Logic<br/>Tech: Node.js<br/>Performance: Auto-starts at 3+ players<br/>Efficiency: Seamless game initiation]
-    F -->|Fetches/Sends| G[Binary Compressed Cards<br/>Tech: Binary compression (Brotli + Cap'n Proto vibes)<br/>Performance: Efficient data transfer<br/>Savings: Reduced bandwidth and processing]
+    G[Binary Compressed Cards<br/>Tech: Binary compression (Brotli + Capn Proto vibes)<br/>Performance: Efficient data transfer<br/>Savings: Reduced bandwidth and processing]
     E -->|Displays| H[Game UI<br/>Tech: Canvas-based<br/>Performance: Instant updates<br/>Savings: Optimized for real-time interactions]
 ```
 
