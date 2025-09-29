@@ -1,58 +1,58 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const loading = document.getElementById("loading");
+const c = document.getElementById("gameCanvas");
+const x = c.getContext("2d");
+const l = document.getElementById("loading");
 
 // Game UI elements
-const startButton = document.createElement("button");
-startButton.textContent = "Start Game";
-startButton.style.position = "absolute";
-startButton.style.top = "20px";
-startButton.style.right = "20px";
-startButton.style.padding = "10px 20px";
-startButton.style.display = "none";
-document.body.appendChild(startButton);
+const s = document.createElement("button");
+s.textContent = "Start Game";
+s.style.position = "absolute";
+s.style.top = "20px";
+s.style.right = "20px";
+s.style.padding = "10px 20px";
+s.style.display = "none";
+document.body.appendChild(s);
 
-const statusDiv = document.createElement("div");
-statusDiv.style.position = "absolute";
-statusDiv.style.top = "20px";
-statusDiv.style.left = "20px";
-statusDiv.style.color = "white";
-statusDiv.style.fontFamily = "monospace";
-statusDiv.style.fontSize = "16px";
-document.body.appendChild(statusDiv);
+const d = document.createElement("div");
+d.style.position = "absolute";
+d.style.top = "20px";
+d.style.left = "20px";
+d.style.color = "white";
+d.style.fontFamily = "monospace";
+d.style.fontSize = "16px";
+document.body.appendChild(d);
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+c.width = window.innerWidth;
+c.height = window.innerHeight;
 
 // Card type constants
-const CardType = { prompt: 0, response: 1 };
+const CT = { p: 0, r: 1 };
 
 // Game phases
-const PHASES = {
-  WAITING: "waiting",
-  DEALING: "dealing",
-  PLAYING: "playing",
-  JUDGING: "judging",
-  SCORING: "scoring",
-  GAME_OVER: "game_over",
+const P = {
+  W: "waiting",
+  D: "dealing",
+  Y: "playing",
+  J: "judging",
+  S: "scoring",
+  G: "game_over",
 };
 
 // Message utilities for binary WebSocket communication
-const MessageType = {
-  JOIN_ROOM: 1,
-  LEAVE_ROOM: 2,
-  SELECT_CARD: 3,
-  PLAYER_JOINED: 4,
-  PLAYER_LEFT: 5,
-  CARD_SELECTED: 6,
-  GAME_STATE: 7,
-  ERROR: 8,
-  START_GAME: 9,
-  JUDGE_CARD: 10,
-  HAND_UPDATE: 11,
+const MT = {
+  JR: 1,
+  LR: 2,
+  SC: 3,
+  PJ: 4,
+  PL: 5,
+  CS: 6,
+  GS: 7,
+  E: 8,
+  SG: 9,
+  JC: 10,
+  HU: 11,
 };
 
-function serializeMessage(type, data = {}) {
+function sm(type, data = {}) {
   const encoder = new TextEncoder();
   const jsonStr = JSON.stringify(data);
   const jsonBytes = encoder.encode(jsonStr);
@@ -68,7 +68,7 @@ function serializeMessage(type, data = {}) {
   return buffer;
 }
 
-function deserializeMessage(buffer) {
+function dm(buffer) {
   const view = new DataView(buffer);
   const decoder = new TextDecoder();
 
@@ -82,11 +82,11 @@ function deserializeMessage(buffer) {
 }
 
 // Game state
-let cardMap = new Map();
+let cm = new Map();
 let ws = null;
-let currentRoom = null;
-let playerName = null;
-let gameState = {
+let cr = null;
+let pn = null;
+let gs = {
   phase: "waiting",
   players: [],
   myHand: [],
@@ -94,11 +94,11 @@ let gameState = {
 };
 
 // WebSocket reconnection variables
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
-let reconnectTimeout = null;
+let ra = 0;
+const mra = 5;
+let rt = null;
 
-async function loadCards() {
+async function lc() {
   try {
     // Try to load server-decompressed data first (most efficient)
     console.log("Loading cards from server-decompressed binary...");
@@ -142,21 +142,21 @@ async function loadCards() {
 
     // Build lookup map
     for (let card of data.cards) {
-      cardMap.set(card.id, { text: card.text, type: card.type });
+      cm.set(card.id, { text: card.text, type: card.type });
     }
 
-    loading.style.display = "none";
-    return cardMap;
+    l.style.display = "none";
+    return cm;
   } catch (error) {
     console.error("Error loading cards:", error);
-    loading.textContent = "Error loading cards: " + error.message;
+    l.textContent = "Error loading cards: " + error.message;
     // Fallback to CSV if binary loading fails
-    return loadCardsFromCSV();
+    return lcf();
   }
 }
 
 // Fallback CSV loading function
-async function loadCardsFromCSV() {
+async function lcf() {
   try {
     console.log("Falling back to CSV loading...");
     const response = await fetch("prep/eee75ea1clean.csv");
@@ -169,7 +169,7 @@ async function loadCardsFromCSV() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-      const parts = parseCSVLine(line);
+      const parts = pcl(line);
       if (parts.length < 2) continue;
       const typeStr = parts[0];
       const text = parts.slice(1).join(",");
@@ -179,19 +179,19 @@ async function loadCardsFromCSV() {
 
     // Build lookup map
     for (let card of cards) {
-      cardMap.set(card.id, { text: card.text, type: card.type });
+      cm.set(card.id, { text: card.text, type: card.type });
     }
 
     console.log(`Loaded ${cards.length} cards from CSV fallback`);
-    loading.style.display = "none";
-    return cardMap;
+    l.style.display = "none";
+    return cm;
   } catch (error) {
     console.error("Error loading cards from CSV:", error);
-    loading.textContent = "Error loading cards from all sources";
+    l.textContent = "Error loading cards from all sources";
   }
 }
 
-function parseCSVLine(line) {
+function pcl(line) {
   const result = [];
   let current = "";
   let inQuotes = false;
@@ -210,157 +210,139 @@ function parseCSVLine(line) {
   return result;
 }
 
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function r() {
+  x.clearRect(0, 0, c.width, c.height);
 
   // Update status
-  updateStatusDisplay();
+  usd();
 
   // Render based on game phase
-  switch (gameState.phase) {
-    case PHASES.WAITING:
-      renderWaitingRoom();
+  switch (gs.phase) {
+    case P.W:
+      rwr();
       break;
-    case PHASES.PLAYING:
-      renderPlayingPhase();
+    case P.Y:
+      rpp();
       break;
-    case PHASES.JUDGING:
-      renderJudgingPhase();
+    case P.J:
+      rjp();
       break;
-    case PHASES.SCORING:
-    case PHASES.GAME_OVER:
-      renderScoringPhase();
+    case P.S:
+    case P.G:
+      rsp();
       break;
     default:
-      renderWaitingRoom();
+      rwr();
   }
 }
 
-function updateStatusDisplay() {
-  let status = `Phase: ${gameState.phase.toUpperCase()}\n`;
-  status += `Players: ${gameState.players.map((p) => `${p.name} (${p.score})`).join(", ")}\n`;
+function usd() {
+  let status = `Phase: ${gs.phase.toUpperCase()}\n`;
+  status += `Players: ${gs.players.map((p) => `${p.name} (${p.score})`).join(", ")}\n`;
 
-  if (gameState.phase === PHASES.WAITING) {
-    if (gameState.players.length >= 3) {
+  if (gs.phase === P.W) {
+    if (gs.players.length >= 3) {
       status += `Status: Game starting automatically!\n`;
     } else {
-      status += `Status: Waiting for ${3 - gameState.players.length} more player(s)...\n`;
+      status += `Status: Waiting for ${3 - gs.players.length} more player(s)...\n`;
     }
-  } else if (gameState.currentRound) {
-    const czarName = gameState.currentRound.czarName;
+  } else if (gs.currentRound) {
+    const czarName = gs.currentRound.czarName;
     if (czarName) {
       status += `Card Czar: ${czarName}\n`;
     }
 
-    if (gameState.currentRound.blackCard !== null) {
-      const blackCard = cardMap.get(gameState.currentRound.blackCard);
+    if (gs.currentRound.blackCard !== null) {
+      const blackCard = cm.get(gs.currentRound.blackCard);
       if (blackCard) {
         status += `Black Card: ${blackCard.text}\n`;
       }
     }
 
-    if (gameState.currentRound.winner) {
-      status += `Round Winner: ${gameState.currentRound.winner}\n`;
+    if (gs.currentRound.winner) {
+      status += `Round Winner: ${gs.currentRound.winner}\n`;
     }
   }
 
-  statusDiv.textContent = status;
+  d.textContent = status;
 }
 
-function renderWaitingRoom() {
-  ctx.fillStyle = "#fff";
-  ctx.font = "24px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText(
-    "Waiting for players...",
-    canvas.width / 2,
-    canvas.height / 2 - 50,
+function rwr() {
+  x.fillStyle = "#fff";
+  x.font = "24px monospace";
+  x.textAlign = "center";
+  x.fillText("Waiting for players...", c.width / 2, c.height / 2 - 50);
+
+  x.font = "16px monospace";
+  x.fillText(
+    `Connected: ${gs.players.filter((p) => p.connected).length} players`,
+    c.width / 2,
+    c.height / 2,
   );
 
-  ctx.font = "16px monospace";
-  ctx.fillText(
-    `Connected: ${gameState.players.filter((p) => p.connected).length} players`,
-    canvas.width / 2,
-    canvas.height / 2,
-  );
-
-  if (gameState.players.length >= 3) {
-    ctx.fillText(
-      "Game starting automatically!",
-      canvas.width / 2,
-      canvas.height / 2 + 50,
-    );
-    startButton.style.display = "none";
+  if (gs.players.length >= 3) {
+    x.fillText("Game starting automatically!", c.width / 2, c.height / 2 + 50);
+    s.style.display = "none";
   } else {
-    ctx.fillText(
-      "Waiting for more players...",
-      canvas.width / 2,
-      canvas.height / 2 + 50,
-    );
-    startButton.style.display = "none";
+    x.fillText("Waiting for more players...", c.width / 2, c.height / 2 + 50);
+    s.style.display = "none";
   }
 }
 
-function renderPlayingPhase() {
+function rpp() {
   // Show black card at top
-  if (gameState.currentRound && gameState.currentRound.blackCard !== null) {
-    const blackCard = cardMap.get(gameState.currentRound.blackCard);
+  if (gs.currentRound && gs.currentRound.blackCard !== null) {
+    const blackCard = cm.get(gs.currentRound.blackCard);
     if (blackCard) {
-      renderCard(blackCard, canvas.width / 2 - 150, 100, 300, 120, true);
+      rc(blackCard, c.width / 2 - 150, 100, 300, 120, true);
     }
   }
 
   // Find current player
-  const currentPlayerIndex = gameState.players.findIndex(
-    (p) => p.name === playerName,
-  );
-  const isCurrentPlayerCzar = gameState.currentRound?.czarName === playerName;
+  const currentPlayerIndex = gs.players.findIndex((p) => p.name === pn);
+  const isCurrentPlayerCzar = gs.currentRound?.czarName === pn;
 
   if (isCurrentPlayerCzar) {
     // Card Czar sees waiting message
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      "You are the Card Czar!",
-      canvas.width / 2,
-      canvas.height / 2 - 50,
-    );
-    ctx.fillText(
+    x.fillStyle = "#fff";
+    x.font = "18px monospace";
+    x.textAlign = "center";
+    x.fillText("You are the Card Czar!", c.width / 2, c.height / 2 - 50);
+    x.fillText(
       "Waiting for players to submit their cards...",
-      canvas.width / 2,
-      canvas.height / 2,
+      c.width / 2,
+      c.height / 2,
     );
   } else {
     // Regular players see their hand
-    const handY = canvas.height - 200;
+    const handY = c.height - 200;
     const cardWidth = 180;
     const cardHeight = 100;
     const spacing = 10;
     const columns = 3;
-    const rows = Math.ceil(gameState.myHand.length / columns);
+    const rows = Math.ceil(gs.myHand.length / columns);
     const totalWidth = columns * (cardWidth + spacing) - spacing;
     const totalHeight = rows * (cardHeight + spacing) - spacing;
-    let startX = (canvas.width - totalWidth) / 2;
+    let startX = (c.width - totalWidth) / 2;
     let startY = handY - totalHeight + cardHeight;
 
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(
+    x.fillStyle = "#fff";
+    x.font = "18px monospace";
+    x.textAlign = "center";
+    x.fillText(
       "Your Hand - Click a card to play it!",
-      canvas.width / 2,
+      c.width / 2,
       startY - 30,
     );
 
-    for (let i = 0; i < gameState.myHand.length; i++) {
+    for (let i = 0; i < gs.myHand.length; i++) {
       const row = Math.floor(i / columns);
       const col = i % columns;
-      const cardId = gameState.myHand[i];
-      const card = cardMap.get(cardId);
+      const cardId = gs.myHand[i];
+      const card = cm.get(cardId);
       if (card) {
-        const isSelected = gameState.selectedCards.includes(cardId);
-        renderCard(
+        const isSelected = gs.selectedCards.includes(cardId);
+        rc(
           card,
           startX + col * (cardWidth + spacing),
           startY + row * (cardHeight + spacing),
@@ -374,42 +356,39 @@ function renderPlayingPhase() {
   }
 }
 
-function renderJudgingPhase() {
+function rjp() {
   // Show black card
-  if (gameState.currentRound && gameState.currentRound.blackCard !== null) {
-    const blackCard = cardMap.get(gameState.currentRound.blackCard);
+  if (gs.currentRound && gs.currentRound.blackCard !== null) {
+    const blackCard = cm.get(gs.currentRound.blackCard);
     if (blackCard) {
-      renderCard(blackCard, canvas.width / 2 - 150, 100, 300, 120, true);
+      rc(blackCard, c.width / 2 - 150, 100, 300, 120, true);
     }
   }
 
   // Find current player
-  const currentPlayerIndex = gameState.players.findIndex(
-    (p) => p.name === playerName,
-  );
-  const isCurrentPlayerCzar = gameState.currentRound?.czarName === playerName;
+  const currentPlayerIndex = gs.players.findIndex((p) => p.name === pn);
+  const isCurrentPlayerCzar = gs.currentRound?.czarName === pn;
 
   if (isCurrentPlayerCzar) {
     // Only Card Czar sees the judging UI
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("Choose the winning card!", canvas.width / 2, 250);
+    x.fillStyle = "#fff";
+    x.font = "18px monospace";
+    x.textAlign = "center";
+    x.fillText("Choose the winning card!", c.width / 2, 250);
 
     const revealedY = 280;
     const cardWidth = 200;
     const cardHeight = 100;
     const spacing = 20;
     const totalWidth =
-      gameState.currentRound.revealedCards.length * (cardWidth + spacing) -
-      spacing;
-    let startX = (canvas.width - totalWidth) / 2;
+      gs.currentRound.revealedCards.length * (cardWidth + spacing) - spacing;
+    let startX = (c.width - totalWidth) / 2;
 
-    for (let i = 0; i < gameState.currentRound.revealedCards.length; i++) {
-      const play = gameState.currentRound.revealedCards[i];
-      const card = cardMap.get(play.cardIds[0]);
+    for (let i = 0; i < gs.currentRound.revealedCards.length; i++) {
+      const play = gs.currentRound.revealedCards[i];
+      const card = cm.get(play.cardIds[0]);
       if (card) {
-        renderCard(
+        rc(
           card,
           startX + i * (cardWidth + spacing),
           revealedY,
@@ -423,61 +402,57 @@ function renderJudgingPhase() {
     }
   } else {
     // Other players see waiting message
-    ctx.fillStyle = "#fff";
-    ctx.font = "18px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(
+    x.fillStyle = "#fff";
+    x.font = "18px monospace";
+    x.textAlign = "center";
+    x.fillText(
       "Waiting for Card Czar to choose winner...",
-      canvas.width / 2,
-      canvas.height / 2,
+      c.width / 2,
+      c.height / 2,
     );
   }
 }
 
-function renderScoringPhase() {
-  ctx.fillStyle = "#fff";
-  ctx.font = "24px monospace";
-  ctx.textAlign = "center";
+function rsp() {
+  x.fillStyle = "#fff";
+  x.font = "24px monospace";
+  x.textAlign = "center";
 
-  if (gameState.phase === PHASES.GAME_OVER) {
-    ctx.fillText("GAME OVER!", canvas.width / 2, canvas.height / 2 - 100);
+  if (gs.phase === P.G) {
+    x.fillText("GAME OVER!", c.width / 2, c.height / 2 - 100);
 
-    const winner = gameState.players.find((p) => p.score >= 10);
+    const winner = gs.players.find((p) => p.score >= 10);
     if (winner) {
-      ctx.fillText(
+      x.fillText(
         `${winner.name} wins with ${winner.score} points!`,
-        canvas.width / 2,
-        canvas.height / 2 - 50,
+        c.width / 2,
+        c.height / 2 - 50,
       );
     }
   } else {
-    ctx.fillText("Round Complete!", canvas.width / 2, canvas.height / 2 - 50);
-    if (gameState.currentRound && gameState.currentRound.winner) {
-      ctx.fillText(
-        `${gameState.currentRound.winner} wins the round!`,
-        canvas.width / 2,
-        canvas.height / 2,
+    x.fillText("Round Complete!", c.width / 2, c.height / 2 - 50);
+    if (gs.currentRound && gs.currentRound.winner) {
+      x.fillText(
+        `${gs.currentRound.winner} wins the round!`,
+        c.width / 2,
+        c.height / 2,
       );
     }
   }
 
   // Show final scores
-  ctx.font = "18px monospace";
-  let scoreY = canvas.height / 2 + 50;
-  gameState.players.forEach((player) => {
-    ctx.fillText(
-      `${player.name}: ${player.score} points`,
-      canvas.width / 2,
-      scoreY,
-    );
+  x.font = "18px monospace";
+  let scoreY = c.height / 2 + 50;
+  gs.players.forEach((player) => {
+    x.fillText(`${player.name}: ${player.score} points`, c.width / 2, scoreY);
     scoreY += 30;
   });
 }
 
-function renderCard(
+function rc(
   card,
-  x,
-  y,
+  px,
+  py,
   width,
   height,
   isBlack = false,
@@ -485,68 +460,66 @@ function renderCard(
   showJudgeButton = false,
 ) {
   // Card background
-  ctx.fillStyle = isBlack ? "#000" : "#fff";
-  if (isSelected) ctx.fillStyle = "#4CAF50"; // Green for selected
-  ctx.fillRect(x, y, width, height);
+  x.fillStyle = isBlack ? "#000" : "#fff";
+  if (isSelected) x.fillStyle = "#4CAF50"; // Green for selected
+  x.fillRect(px, py, width, height);
 
   // Border
-  ctx.strokeStyle = isBlack ? "#fff" : "#000";
-  ctx.lineWidth = isSelected ? 3 : 1;
-  ctx.strokeRect(x, y, width, height);
+  x.strokeStyle = isBlack ? "#fff" : "#000";
+  x.lineWidth = isSelected ? 3 : 1;
+  x.strokeRect(px, py, width, height);
 
   // Text
-  ctx.fillStyle = isBlack ? "#fff" : "#000";
-  ctx.font = "14px monospace";
-  ctx.textAlign = "center";
+  x.fillStyle = isBlack ? "#fff" : "#000";
+  x.font = "14px monospace";
+  x.textAlign = "center";
 
   const words = card.text.split(" ");
   let line = "";
-  let lineY = y + 25;
+  let lineY = py + 25;
   const maxWidth = width - 20;
 
   for (let word of words) {
     const testLine = line + word + " ";
-    if (ctx.measureText(testLine).width > maxWidth) {
-      ctx.fillText(line, x + width / 2, lineY);
+    if (x.measureText(testLine).width > maxWidth) {
+      x.fillText(line, px + width / 2, lineY);
       line = word + " ";
       lineY += 18;
     } else {
       line = testLine;
     }
   }
-  ctx.fillText(line, x + width / 2, lineY);
+  x.fillText(line, px + width / 2, lineY);
 
   // Judge button for czar
   if (showJudgeButton) {
-    ctx.fillStyle = "#FF5722";
-    ctx.fillRect(x, y + height - 25, width, 25);
-    ctx.fillStyle = "#fff";
-    ctx.font = "12px monospace";
-    ctx.fillText("CHOOSE WINNER", x + width / 2, y + height - 8);
+    x.fillStyle = "#FF5722";
+    x.fillRect(px, py + height - 25, width, 25);
+    x.fillStyle = "#fff";
+    x.font = "12px monospace";
+    x.fillText("CHOOSE WINNER", px + width / 2, py + height - 8);
   }
 }
 
-function getCardAtPosition(x, y) {
+function gcap(x, y) {
   // Check hand cards during playing phase (only for non-czar players)
-  if (gameState.phase === PHASES.PLAYING) {
-    const currentPlayerIndex = gameState.players.findIndex(
-      (p) => p.name === playerName,
-    );
-    const isCurrentPlayerCzar = gameState.currentRound?.czarName === playerName;
+  if (gs.phase === P.Y) {
+    const currentPlayerIndex = gs.players.findIndex((p) => p.name === pn);
+    const isCurrentPlayerCzar = gs.currentRound?.czarName === pn;
 
     if (!isCurrentPlayerCzar) {
-      const handY = canvas.height - 200;
+      const handY = c.height - 200;
       const cardWidth = 180;
       const cardHeight = 100;
       const spacing = 10;
       const columns = 3;
-      const rows = Math.ceil(gameState.myHand.length / columns);
+      const rows = Math.ceil(gs.myHand.length / columns);
       const totalWidth = columns * (cardWidth + spacing) - spacing;
       const totalHeight = rows * (cardHeight + spacing) - spacing;
-      const startX = (canvas.width - totalWidth) / 2;
+      const startX = (c.width - totalWidth) / 2;
       const startY = handY - totalHeight + cardHeight;
 
-      for (let i = 0; i < gameState.myHand.length; i++) {
+      for (let i = 0; i < gs.myHand.length; i++) {
         const row = Math.floor(i / columns);
         const col = i % columns;
         const cardX = startX + col * (cardWidth + spacing);
@@ -557,22 +530,16 @@ function getCardAtPosition(x, y) {
           y >= cardY &&
           y <= cardY + cardHeight
         ) {
-          return { type: "hand", index: i, cardId: gameState.myHand[i] };
+          return { type: "hand", index: i, cardId: gs.myHand[i] };
         }
       }
     }
   }
 
   // Check revealed cards during judging phase - only if current player is czar
-  if (
-    gameState.phase === PHASES.JUDGING &&
-    gameState.currentRound &&
-    gameState.currentRound.revealedCards
-  ) {
-    const currentPlayerIndex = gameState.players.findIndex(
-      (p) => p.name === playerName,
-    );
-    const isCurrentPlayerCzar = gameState.currentRound?.czarName === playerName;
+  if (gs.phase === P.J && gs.currentRound && gs.currentRound.revealedCards) {
+    const currentPlayerIndex = gs.players.findIndex((p) => p.name === pn);
+    const isCurrentPlayerCzar = gs.currentRound?.czarName === pn;
 
     if (isCurrentPlayerCzar) {
       const revealedY = 280;
@@ -580,11 +547,10 @@ function getCardAtPosition(x, y) {
       const cardHeight = 100;
       const spacing = 20;
       const totalWidth =
-        gameState.currentRound.revealedCards.length * (cardWidth + spacing) -
-        spacing;
-      const startX = (canvas.width - totalWidth) / 2;
+        gs.currentRound.revealedCards.length * (cardWidth + spacing) - spacing;
+      const startX = (c.width - totalWidth) / 2;
 
-      for (let i = 0; i < gameState.currentRound.revealedCards.length; i++) {
+      for (let i = 0; i < gs.currentRound.revealedCards.length; i++) {
         const cardX = startX + i * (cardWidth + spacing);
         if (
           x >= cardX &&
@@ -595,7 +561,7 @@ function getCardAtPosition(x, y) {
           return {
             type: "judge",
             index: i,
-            playerName: gameState.currentRound.revealedCards[i].playerName,
+            playerName: gs.currentRound.revealedCards[i].playerName,
           };
         }
       }
@@ -606,24 +572,19 @@ function getCardAtPosition(x, y) {
 }
 
 // WebSocket connection
-function connectWS() {
-  const serverUrl =
-    getQueryParam("server") ||
-    (window.location.protocol === "https:" ? "wss:" : "ws:") +
-      "//" +
-      window.location.host;
-  ws = new WebSocket(serverUrl);
+function cws() {
+  ws = new WebSocket("ws://localhost:8081");
 
   ws.onopen = () => {
     console.log("Connected to server");
-    reconnectAttempts = 0; // Reset reconnection attempts on successful connection
+    ra = 0; // Reset reconnection attempts on successful connection
     // Join a room
-    currentRoom = "room1";
-    playerName =
+    cr = "room1";
+    pn =
       prompt("Enter your name:") || "Player" + Math.floor(Math.random() * 1000);
-    const joinMessage = serializeMessage(MessageType.JOIN_ROOM, {
-      roomId: currentRoom,
-      playerName,
+    const joinMessage = sm(MT.JR, {
+      roomId: cr,
+      playerName: pn,
     });
     ws.send(joinMessage);
   };
@@ -632,18 +593,18 @@ function connectWS() {
     try {
       // Handle binary messages
       if (event.data instanceof ArrayBuffer) {
-        const parsed = deserializeMessage(event.data);
-        handleWSMessage(parsed);
+        const parsed = dm(event.data);
+        hwsm(parsed);
       } else if (event.data instanceof Blob) {
         // Convert blob to array buffer
         event.data.arrayBuffer().then((buffer) => {
-          const parsed = deserializeMessage(buffer);
-          handleWSMessage(parsed);
+          const parsed = dm(buffer);
+          hwsm(parsed);
         });
       } else {
         // Fallback to JSON for backward compatibility
         const data = JSON.parse(event.data);
-        handleWSMessage({ type: data.type, data: data });
+        hwsm({ type: data.type, data: data });
       }
     } catch (error) {
       console.error("Error parsing WebSocket message:", error);
@@ -652,7 +613,7 @@ function connectWS() {
 
   ws.onclose = () => {
     console.log("Disconnected");
-    attemptReconnect();
+    ar();
   };
 
   ws.onerror = (error) => {
@@ -660,8 +621,8 @@ function connectWS() {
   };
 }
 
-function attemptReconnect() {
-  if (reconnectAttempts >= maxReconnectAttempts) {
+function ar() {
+  if (ra >= mra) {
     console.error(
       "Max reconnection attempts reached. Please refresh the page.",
     );
@@ -669,59 +630,57 @@ function attemptReconnect() {
     return;
   }
 
-  reconnectAttempts++;
-  const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
-  console.log(
-    `Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`,
-  );
+  ra++;
+  const delay = Math.min(1000 * Math.pow(2, ra), 30000); // Exponential backoff, max 30s
+  console.log(`Attempting to reconnect in ${delay}ms (attempt ${ra}/${mra})`);
 
-  reconnectTimeout = setTimeout(() => {
+  rt = setTimeout(() => {
     console.log("Reconnecting...");
-    connectWS();
+    cws();
   }, delay);
 }
 
-function handleWSMessage(message) {
+function hwsm(message) {
   const { type, data } = message;
 
   console.log("Received message - type:", type, "data:", data);
 
   switch (type) {
-    case MessageType.GAME_STATE:
+    case MT.GS:
       if (data.type === "joined") {
         console.log("Joined room:", data.roomId, "Players:", data.players);
-        gameState.players = data.players || [];
+        gs.players = data.players || [];
       } else if (data.type === "gameUpdate") {
-        gameState.phase = data.phase;
-        gameState.currentRound = data.currentRound;
-        gameState.players = data.players || [];
+        gs.phase = data.phase;
+        gs.currentRound = data.currentRound;
+        gs.players = data.players || [];
 
         // Update my hand if provided
         if (data.myHand) {
-          gameState.myHand = data.myHand;
+          gs.myHand = data.myHand;
         }
 
-        console.log("Game state update:", gameState);
-        render();
+        console.log("Game state update:", gs);
+        r();
       }
       break;
-    case MessageType.PLAYER_JOINED:
+    case MT.PJ:
       console.log("Player joined:", data.player);
       // Game state update will follow immediately with full player list
       break;
-    case MessageType.PLAYER_LEFT:
+    case MT.PL:
       console.log("Player left:", data.player);
       // Game state update will follow immediately with updated player list
       break;
-    case MessageType.CARD_SELECTED:
+    case MT.CS:
       console.log("Card selected by", data.player, ":", data.cardId);
       break;
-    case MessageType.HAND_UPDATE:
+    case MT.HU:
       console.log("Hand update:", data.hand);
-      gameState.myHand = data.hand;
-      render();
+      gs.myHand = data.hand;
+      r();
       break;
-    case MessageType.ERROR:
+    case MT.E:
       console.error("Server error:", data.message);
       alert("Error: " + data.message);
       break;
@@ -732,33 +691,30 @@ function handleWSMessage(message) {
 
 // Event handlers - game now auto-starts when 3 players join
 
-canvas.addEventListener("click", (event) => {
+c.addEventListener("click", (event) => {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-  const rect = canvas.getBoundingClientRect();
+  const rect = c.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
 
-  const clickedCard = getCardAtPosition(x, y);
+  const clickedCard = gcap(x, y);
 
   if (clickedCard) {
     console.log("Clicked card:", clickedCard);
-    if (clickedCard.type === "hand" && gameState.phase === PHASES.PLAYING) {
+    if (clickedCard.type === "hand" && gs.phase === P.Y) {
       // Play a card from hand
       console.log("Playing card from hand:", clickedCard.cardId);
-      const selectMessage = serializeMessage(MessageType.SELECT_CARD, {
+      const selectMessage = sm(MT.SC, {
         cardId: clickedCard.cardId,
       });
       ws.send(selectMessage);
-      gameState.selectedCards = [clickedCard.cardId];
-      render();
-    } else if (
-      clickedCard.type === "judge" &&
-      gameState.phase === PHASES.JUDGING
-    ) {
+      gs.selectedCards = [clickedCard.cardId];
+      r();
+    } else if (clickedCard.type === "judge" && gs.phase === P.J) {
       // Judge a winning card
       console.log("Judging winner:", clickedCard.playerName);
-      const judgeMessage = serializeMessage(MessageType.JUDGE_CARD, {
+      const judgeMessage = sm(MT.JC, {
         winningPlayerName: clickedCard.playerName,
       });
       ws.send(judgeMessage);
@@ -767,7 +723,7 @@ canvas.addEventListener("click", (event) => {
         "Unhandled click - type:",
         clickedCard.type,
         "phase:",
-        gameState.phase,
+        gs.phase,
       );
     }
   } else {
@@ -777,19 +733,13 @@ canvas.addEventListener("click", (event) => {
 
 // Handle resize
 window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  render();
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  r();
 });
 
-// Helper function to get query parameters
-function getQueryParam(name) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name);
-}
-
 // Start app
-loadCards().then(() => {
-  connectWS();
-  render();
+lc().then(() => {
+  cws();
+  r();
 });
