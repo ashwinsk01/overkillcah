@@ -607,7 +607,12 @@ function getCardAtPosition(x, y) {
 
 // WebSocket connection
 function connectWS() {
-  ws = new WebSocket("ws://localhost:8081");
+  const serverUrl =
+    getQueryParam("server") ||
+    (window.location.protocol === "https:" ? "wss:" : "ws:") +
+      "//" +
+      window.location.host;
+  ws = new WebSocket(serverUrl);
 
   ws.onopen = () => {
     console.log("Connected to server");
@@ -776,6 +781,12 @@ window.addEventListener("resize", () => {
   canvas.height = window.innerHeight;
   render();
 });
+
+// Helper function to get query parameters
+function getQueryParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
 
 // Start app
 loadCards().then(() => {
