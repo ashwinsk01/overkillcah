@@ -18,6 +18,9 @@ export const MessageType = {
   HAND_UPDATE: 11,
 };
 
+// Maximum message size (64KB - 3 bytes for header)
+const MAX_MESSAGE_SIZE = 65532;
+
 /**
  * Serialize a message to binary format
  */
@@ -27,6 +30,13 @@ export function serializeMessage(type, data = {}) {
   // Convert data to JSON string first, then to bytes
   const jsonStr = JSON.stringify(data);
   const jsonBytes = encoder.encode(jsonStr);
+
+  // Check message size limit
+  if (jsonBytes.length > MAX_MESSAGE_SIZE) {
+    throw new Error(
+      `Message too large: ${jsonBytes.length} bytes (max ${MAX_MESSAGE_SIZE})`,
+    );
+  }
 
   // Create buffer: 1 byte type + 2 bytes length + data
   const buffer = new ArrayBuffer(3 + jsonBytes.length);
@@ -49,7 +59,13 @@ export function serializeMessage(type, data = {}) {
  * Deserialize a message from binary format
  */
 export function deserializeMessage(buffer) {
-  const view = new DataView(buffer);
+  if (!(buffer instanceof ArrayBuffer) && !(buffer instanceof Uint8Array)) {
+    throw new Error("Invalid buffer type for deserialization");
+  }
+
+  const view = new DataView(
+    buffer instanceof Uint8Array ? buffer.buffer : buffer,
+  );
   const decoder = new TextDecoder();
 
   // Read type (1 byte)
@@ -58,8 +74,29 @@ export function deserializeMessage(buffer) {
   // Read length (2 bytes, little-endian)
   const length = view.getUint16(1, true);
 
+  // Validate length
+  if (length > MAX_MESSAGE_SIZE) {
+    throw new Error(
+      `Invalid message length: ${length} bytes (max ${MAX_MESSAGE_SIZE})`,
+    );
+  }
+
+  // Check buffer has enough data
+  const totalExpectedSize = 3 + length;
+  const actualSize =
+    buffer instanceof Uint8Array ? buffer.length : buffer.byteLength;
+  if (actualSize < totalExpectedSize) {
+    throw new Error(
+      `Incomplete message: expected ${totalExpectedSize} bytes, got ${actualSize}`,
+    );
+  }
+
   // Read data
-  const dataBytes = new Uint8Array(buffer, 3, length);
+  const dataBytes = new Uint8Array(
+    buffer instanceof Uint8Array ? buffer.buffer : buffer,
+    3,
+    length,
+  );
   const jsonStr = decoder.decode(dataBytes);
   const data = JSON.parse(jsonStr);
 

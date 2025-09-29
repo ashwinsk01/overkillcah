@@ -10,10 +10,34 @@ const { execSync } = require("child_process");
 
 console.log("🚀 Building CAH-Hyper for production...\n");
 
+// Step 0: Convert Cap'n Proto to binary JSON for runtime
+console.log("🔄 Converting Cap'n Proto to binary JSON...");
+try {
+  execSync("cd prep && python3 capnp_to_json.py", { stdio: "inherit" });
+  console.log("✅ Cap'n Proto conversion complete");
+} catch (error) {
+  console.error("❌ Cap'n Proto conversion failed:", error.message);
+  process.exit(1);
+}
+
+// Compress the binary JSON
+console.log("🗜️  Compressing binary JSON...");
+try {
+  execSync(
+    "python3 -c \"import brotli; open('binaries/cards.json.bin.br', 'wb').write(brotli.compress(open('binaries/cards.json.bin', 'rb').read()))\"",
+    { stdio: "inherit" },
+  );
+  console.log("✅ Binary JSON compression complete");
+} catch (error) {
+  console.error("❌ Binary JSON compression failed:", error.message);
+  process.exit(1);
+}
+console.log("");
+
 // Step 1: Verify file sizes and compression ratios
 console.log("📈 Analyzing compression efficiency...");
-const uncompressedSize = fs.statSync("binaries/cards.json.bin").size;
-const compressedSize = fs.statSync("binaries/cards.json.bin.br").size;
+const uncompressedSize = fs.statSync("binaries/cards.bin").size;
+const compressedSize = fs.statSync("binaries/cards.bin.br").size;
 const compressionRatio = (
   (1 - compressedSize / uncompressedSize) *
   100
@@ -56,7 +80,7 @@ fs.writeFileSync("start.sh", startScript);
 fs.chmodSync("start.sh", 0o755);
 
 console.log("🎉 Build complete! Production optimizations:");
-console.log("   ✅ Binary JSON format with Brotli compression");
+console.log("   ✅ Cap'n Proto format with Brotli compression");
 console.log("   ✅ Efficient WebSocket binary messaging");
 console.log("   ✅ Canvas-based rendering for performance");
 console.log("   ✅ Server-side decompression fallback");

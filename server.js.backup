@@ -2,7 +2,6 @@ const express = require("express");
 const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
-
 const {
   MessageType,
   deserializeMessage,
@@ -54,9 +53,9 @@ const wss = new WebSocket.Server(
 
 // Load card data
 let cardData = null;
-async function loadCardData() {
+function loadCardData() {
   try {
-    const compressedData = await fs.promises.readFile(
+    const compressedData = fs.readFileSync(
       path.join(__dirname, "binaries/cards.json.bin.br"),
     );
     const brotli = require("brotli");
@@ -69,24 +68,24 @@ async function loadCardData() {
     }
 
     const length = new DataView(
-      decompressed.buffer,
-      decompressed.byteOffset + 4,
+      decompressed.slice(4, 8).buffer,
+      decompressed.slice(4, 8).byteOffset,
     ).getUint32(0, true);
     const jsonBytes = decompressed.slice(8, 8 + length);
     const jsonText = new TextDecoder().decode(jsonBytes);
-
     cardData = JSON.parse(jsonText);
 
     console.log(`Loaded ${cardData.cards.length} cards for game engine`);
   } catch (error) {
     console.error("Failed to load card data:", error);
-    await loadCardDataFromCSV();
+    // Fallback to CSV
+    loadCardDataFromCSV();
   }
 }
 
-async function loadCardDataFromCSV() {
+function loadCardDataFromCSV() {
   try {
-    const csvText = await fs.promises.readFile(
+    const csvText = fs.readFileSync(
       path.join(__dirname, "prep/eee75ea1clean.csv"),
       "utf-8",
     );
@@ -167,76 +166,66 @@ const PHASES = {
 const rooms = new Map();
 
 // Initialize card data
-loadCardData().then(() => {
-  console.log("Card data loaded, WebSocket server ready to handle game logic");
+loadCardData();
 
-  wss.on("connection", (ws) => {
-    console.log("New connection");
+wss.on("connection", (ws) => {
+  console.log("New connection");
 
-    ws.on("message", (message) => {
-      try {
-        // Handle both binary and JSON messages for backward compatibility
-        let data;
-        if (
-          message instanceof Buffer ||
-          message instanceof ArrayBuffer ||
-          message instanceof Uint8Array
-        ) {
-          // Binary message
-          const buffer =
-            message instanceof Buffer
-              ? message.buffer.slice(
-                  message.byteOffset,
-                  message.byteOffset + message.byteLength,
-                )
-              : message;
-          const parsed = deserializeMessage(buffer);
-          console.log(
-            "Received binary message - type:",
-            parsed.type,
-            "mapped to:",
-            getMessageTypeString(parsed.type),
-            "data:",
-            parsed.data,
-          );
-          data = { type: getMessageTypeString(parsed.type), ...parsed.data };
-        } else {
-          // JSON message (fallback)
-          data = JSON.parse(message);
-          console.log("Received JSON message - data:", data);
-        }
-        console.log("Calling handleMessage with:", data);
-        handleMessage(ws, data);
-      } catch (err) {
-        console.error("Invalid message:", err);
-        ws.send(createMessage.error("Invalid message format"));
+  ws.on("message", (message) => {
+    try {
+      // Handle both binary and JSON messages for backward compatibility
+      let data;
+      if (
+        message instanceof Buffer ||
+        message instanceof ArrayBuffer ||
+        message instanceof Uint8Array
+      ) {
+        // Binary message
+        const buffer =
+          message instanceof Buffer
+            ? message.buffer.slice(
+                message.byteOffset,
+                message.byteOffset + message.byteLength,
+              )
+            : message;
+        const parsed = deserializeMessage(buffer);
+        console.log(
+          "Received binary message - type:",
+          parsed.type,
+          "mapped to:",
+          getMessageTypeString(parsed.type),
+          "data:",
+          parsed.data,
+        );
+        data = { type: getMessageTypeString(parsed.type), ...parsed.data };
+      } else {
+        // JSON message (fallback)
+        data = JSON.parse(message);
+        console.log("Received JSON message - data:", data);
       }
-    });
+      console.log("Calling handleMessage with:", data);
+      handleMessage(ws, data);
+    } catch (err) {
+      console.error("Invalid message:", err);
+      ws.send(createMessage.error("Invalid message format"));
+    }
+  });
 
-    ws.on("close", () => {
-      // Remove from room
-      const roomId = ws.roomId;
-      if (roomId && rooms.has(roomId)) {
-        const room = rooms.get(roomId);
-        const playerData = room.players.get(ws);
-
-        if (playerData) {
-          room.players.delete(ws);
+  ws.on("close", () => {
+    // Remove from room
+    for (const [roomId, room] of rooms) {
+      for (const [client, playerData] of room.players) {
+        if (client === ws) {
+          playerData.connected = false;
           const playerLeftMessage = createMessage.playerLeft(playerData.name);
           broadcast(roomId, playerLeftMessage);
 
-          // If room is empty, clean up
-          if (room.players.size === 0) {
-            rooms.delete(roomId);
-          } else {
-            // Check if game should pause or end
-            checkGameContinuity(roomId);
-          }
+          // Check if game should pause or end
+          checkGameContinuity(roomId);
+          break;
         }
       }
-      // Clear room reference
-      delete ws.roomId;
-    });
+    }
   });
 });
 
@@ -292,13 +281,6 @@ function joinRoom(ws, roomId, playerName) {
   }
 
   const room = rooms.get(roomId);
-
-  // Prevent joining if game has already started
-  if (room.gameState.phase !== PHASES.WAITING) {
-    ws.send(createMessage.error("Cannot join a game that has already started"));
-    return;
-  }
-
   room.players.set(ws, {
     name: playerName,
     hand: [],
@@ -712,53 +694,3 @@ function dealCards(deck, count) {
   }
   return cards;
 }
-
-// Process cleanup handlers for graceful shutdown
-function gracefulShutdown(signal) {
-  console.log(`Received ${signal}, shutting down gracefully...`);
-
-  // Close all WebSocket connections
-  for (const [roomId, room] of rooms) {
-    for (const [ws, playerData] of room.players) {
-      try {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close(1001, "Server shutting down");
-        }
-      } catch (error) {
-        console.error("Error closing WebSocket:", error);
-      }
-    }
-  }
-
-  // Clear all rooms
-  rooms.clear();
-
-  // Close HTTP server
-  server.close(() => {
-    console.log("HTTP server closed");
-    process.exit(0);
-  });
-
-  // Force exit after 5 seconds
-  setTimeout(() => {
-    console.error("Forced shutdown after timeout");
-    process.exit(1);
-  }, 5000);
-}
-
-// Handle various termination signals
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2")); // nodemon restart
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-  gracefulShutdown("uncaughtException");
-});
-
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  gracefulShutdown("unhandledRejection");
-});

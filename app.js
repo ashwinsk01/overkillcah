@@ -85,14 +85,18 @@ function deserializeMessage(buffer) {
 let cardMap = new Map();
 let ws = null;
 let currentRoom = null;
-let playerName = "";
+let playerName = null;
 let gameState = {
-  phase: PHASES.WAITING,
+  phase: "waiting",
   players: [],
-  currentRound: null,
   myHand: [],
   selectedCards: [],
 };
+
+// WebSocket reconnection variables
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+let reconnectTimeout = null;
 
 async function loadCards() {
   try {
@@ -146,7 +150,6 @@ async function loadCards() {
   } catch (error) {
     console.error("Error loading cards:", error);
     loading.textContent = "Error loading cards: " + error.message;
-
     // Fallback to CSV if binary loading fails
     return loadCardsFromCSV();
   }
@@ -608,6 +611,7 @@ function connectWS() {
 
   ws.onopen = () => {
     console.log("Connected to server");
+    reconnectAttempts = 0; // Reset reconnection attempts on successful connection
     // Join a room
     currentRoom = "room1";
     playerName =
@@ -643,11 +647,33 @@ function connectWS() {
 
   ws.onclose = () => {
     console.log("Disconnected");
+    attemptReconnect();
   };
 
   ws.onerror = (error) => {
     console.error("WS error:", error);
   };
+}
+
+function attemptReconnect() {
+  if (reconnectAttempts >= maxReconnectAttempts) {
+    console.error(
+      "Max reconnection attempts reached. Please refresh the page.",
+    );
+    alert("Connection lost. Please refresh the page to reconnect.");
+    return;
+  }
+
+  reconnectAttempts++;
+  const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
+  console.log(
+    `Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`,
+  );
+
+  reconnectTimeout = setTimeout(() => {
+    console.log("Reconnecting...");
+    connectWS();
+  }, delay);
 }
 
 function handleWSMessage(message) {
