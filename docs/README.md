@@ -1,44 +1,30 @@
-# Overkill Cards Against Humanity 🎴⚡
+# Overkill Cards Against Humanity 
 
-Welcome to the fastest, leanest Cards Against Humanity game on the web! This is a hyper-optimized online multiplayer version that loads in under 35KB and delivers lols at lightning speed. 
+Welcome to the most overengineered version of Cards Against Humanity game ever! This is a hyper-optimized online multiplayer version that loads in under 35KB and delivers lols at lightning speed. 
 
-Built for the most inappropriate party game, now with zero excuses for lag. Aiming to ridiculously overengineer this.
+Built for the most inappropriate party game, now with zero excuses for lag. Aiming to ridiculously overengineer this even more than it is.
 
-## 🚀 Quick Start
+## How to Play
 
-1. **Clone & Install:**
-   ```bash
-   git clone <your-repo-url>
-   cd overkillcah
-   npm install
-   ```
+Open `http://localhost:8080` in your browser. Grab friends, join a room, and let the chaos begin!
 
-2. **Just Start:**
-   ```bash
-   node server.js
-   ```
-
-4. **Play:** Open `http://localhost:8080` in your browser. Grab friends, join a room, and let the chaos begin!
-
-## 🔥 Features
+## Features
 
 - **Blazing Fast:** Under 35KB payload. Loads faster than you can say "that's inappropriate."
 - **Real-Time Multiplayer:** WebSockets for instant, lag-free card-slinging.
-- **Canvas Magic:** Smooth rendering without the DOM drama.
-- **Binary Wizardry:** Compressed cards, efficient messaging – because who needs bloat?
-- **Auto-Start:** Game kicks off when 3+ players join!
 
-## ⚠️ Warning
 
-This is Cards Against Humanity. Expect offensive, hilarious, and utterly wrong content. Play at your own risk – and with consenting adults only.
+## Warning
 
-## 🛠️ Tech Stack
+This is Cards Against Humanity. Play at your own risk – and with consenting adults only.
 
-- **Frontend:** Vanilla JS + Canvas (because frameworks are for quitters)
+## Tech Stack
+
+- **Frontend:** Vanilla JS + Canvas
 - **Backend:** Node.js + WebSockets
 - **Data:** Binary-compressed cards (Brotli + Cap'n Proto vibes)
 
-## 📊 Technical Architecture
+## Technical Architecture
 
 Well here's the tech specs I guess.
 
